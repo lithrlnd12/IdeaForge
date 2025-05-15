@@ -1,0 +1,41 @@
+steps:
+  # Get Flutter SDK
+  - name: 'gcr.io/cloud-builders/git'
+    args: ['clone', 'https://github.com/flutter/flutter.git', '--depth', '1', '/flutter-sdk']
+
+  # Install Flutter dependencies
+  - name: 'ubuntu'
+    entrypoint: 'bash'
+    args:
+      - '-c'
+      - |
+        export PATH=/flutter-sdk/bin:$PATH
+        cd /workspace
+        flutter pub get
+
+  # Build the APK
+  - name: 'ubuntu'
+    entrypoint: 'bash'
+    args:
+      - '-c'
+      - |
+        export PATH=/flutter-sdk/bin:$PATH
+        cd /workspace
+        flutter build apk --release
+
+  # Upload APK to Cloud Storage
+  - name: 'gcr.io/cloud-builders/gsutil'
+    args: [
+      'cp',
+      '/workspace/build/app/outputs/flutter-apk/app-release.apk',
+      'gs://ideaforge-apks-aaron/ideaforge-builds/${SHORT_SHA}_app-release.apk'
+    ]
+
+artifacts:
+  objects:
+    location: 'gs://ideaforge-apks-aaron/ideaforge-builds/'
+    paths: ['/workspace/build/app/outputs/flutter-apk/app-release.apk']
+
+options:
+  machineType: 'N1_HIGHCPU_8'
+  logging: CLOUD_LOGGING_ONLY
