@@ -1,0 +1,6 @@
+Flask
+python-dotenv
+requests
+google-cloud-storage
+google-cloud-build
+google-auth 
