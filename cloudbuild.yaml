@@ -1,6 +1,6 @@
 steps:
   # Build Flutter APK
-  - name: 'gcr.io/flutter-docker/flutter:3.19.0'
+  - name: 'flutter/flutter:3.19.0'
     entrypoint: 'bash'
     args:
       - '-c'
