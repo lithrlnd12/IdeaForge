@@ -1,6 +1,6 @@
 steps:
   # Build Flutter APK
-  - name: 'ghcr.io/cirruslabs/flutter:main'
+  - name: 'gcr.io/cloud-builders/flutter'
     entrypoint: 'bash'
     args:
       - '-c'
@@ -14,7 +14,7 @@ steps:
     args: [
       'cp',
       'app/build/app/outputs/flutter-apk/app-release.apk',
-      'gs://ideaforge-apks-aaron/ideaforge-builds/${SHORT_SHA}_app-release.apk'
+      'gs://idea-forge-459803_cloudbuild/ideaforge-builds/${SHORT_SHA}_app-release.apk'
     ]
 
   # Create Pull Request from generated-app to main
@@ -42,7 +42,7 @@ steps:
 
 artifacts:
   objects:
-    location: 'gs://ideaforge-apks-aaron/ideaforge-builds/'
+    location: 'gs://idea-forge-459803_cloudbuild/ideaforge-builds/'
     paths: ['app/build/app/outputs/flutter-apk/app-release.apk']
 
 options:
