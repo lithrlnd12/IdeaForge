@@ -6,7 +6,12 @@ steps:
       - '-c'
       - |
         flutter pub get
-        flutter build apk --release
+        flutter clean
+        flutter pub get
+        cd android
+        ./gradlew clean
+        cd ..
+        flutter build apk --release --target-platform android-arm64
 
   # Upload APK to Cloud Storage
   - name: 'gcr.io/cloud-builders/gsutil'
