@@ -1,11 +1,10 @@
 steps:
   # Build Flutter APK
-  - name: 'cirrusci/flutter:3.19.5'
+  - name: 'cirrusci/flutter:stable'
     entrypoint: 'bash'
     args:
       - '-c'
       - |
-        cd app
         flutter pub get
         flutter build apk --release
 
@@ -13,7 +12,7 @@ steps:
   - name: 'gcr.io/cloud-builders/gsutil'
     args: [
       'cp',
-      'app/build/app/outputs/flutter-apk/app-release.apk',
+      'build/app/outputs/flutter-apk/app-release.apk',
       'gs://idea-forge-459803_cloudbuild/ideaforge-builds/${SHORT_SHA}_app-release.apk'
     ]
 
@@ -43,7 +42,7 @@ steps:
 artifacts:
   objects:
     location: 'gs://idea-forge-459803_cloudbuild/ideaforge-builds/'
-    paths: ['app/build/app/outputs/flutter-apk/app-release.apk']
+    paths: ['build/app/outputs/flutter-apk/app-release.apk']
 
 options:
   machineType: 'N1_HIGHCPU_8'
