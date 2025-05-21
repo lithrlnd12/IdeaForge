@@ -5,12 +5,26 @@ steps:
     args:
       - '-c'
       - |
-        flutter pub get
+        # Ensure we're in the correct directory
+        pwd
+        ls -la
+        
+        # Clean and get dependencies
         flutter clean
         flutter pub get
+        
+        # Ensure Android directory exists and has correct structure
+        if [ ! -d "android" ]; then
+          echo "Android directory not found, regenerating platform folders..."
+          flutter create --platforms=android .
+        fi
+        
+        # Clean Android build
         cd android
         ./gradlew clean
         cd ..
+        
+        # Build APK with explicit platform
         flutter build apk --release --target-platform android-arm64
 
   # Upload APK to Cloud Storage
