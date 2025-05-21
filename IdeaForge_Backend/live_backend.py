@@ -63,6 +63,8 @@ def call_claude_api(user_prompt: str, user_id: str, system_prompt: str = None):
         "- You MUST provide the entire application code for a single-file Flutter application in a code block, for 'main.dart'.\n"
         "- If needed, also provide a 'pubspec.yaml' in a separate code block, clearly marked.\n"
         "- DO NOT provide setup instructions, explanations, or guides—ONLY code blocks.\n"
+        "- DO NOT include any asset references or image files in the code.\n"
+        "- Use Flutter's built-in Icons and colored Containers instead of images.\n"
         "- If you cannot generate the code, respond with: ERROR: Unable to generate main.dart code.\n\n"
         "Format Example:\n"
         "FILENAME: main.dart\n"
