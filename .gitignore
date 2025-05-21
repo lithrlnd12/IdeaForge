@@ -43,3 +43,36 @@ app.*.map.json
 /android/app/debug
 /android/app/profile
 /android/app/release
+
+# Environment files
+.env
+.env.*
+*.env
+.env.local
+.env.development
+.env.test
+.env.production
+
+# Secrets and keys
+*.pem
+*.key
+*.keystore
+*.jks
+*.p12
+*.pfx
+*.crt
+*.cer
+*.der
+*.p7b
+*.p7c
+*.p7s
+*.p8
+*.p8e
+*.p8s
+*.p8x
+*.p8y
+*.p8z
+
+# IDE specific files
+.vscode/
+*.code-workspace
