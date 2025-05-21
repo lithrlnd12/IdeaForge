@@ -149,6 +149,15 @@ fun MessageBubble(message: Message, onClick: () -> Unit) {
                         style = MaterialTheme.typography.bodyMedium.copy(fontFamily = FontFamily.Monospace)
                     )
                 }
+            } else if (message.isApkLink) {
+                SelectionContainer {
+                    Text(
+                        text = message.text,
+                        modifier = Modifier.padding(12.dp),
+                        color = textColor,
+                        style = MaterialTheme.typography.bodyLarge
+                    )
+                }
             } else {
                 Text(
                     text = message.text,
