@@ -46,7 +46,6 @@ def get_gcp_credentials():
 # --- Helper: Claude API Call (existing, slightly modified for clarity) ---
 conversation_history = {}
 def call_claude_api(user_prompt: str, user_id: str, system_prompt: str = None):
-    # ... (Keep existing Claude API call logic, ensure it returns generated_text clearly)
     if not ANTHROPIC_API_KEY:
         return {"error": "Anthropic API key not configured."}, 500, None
 
@@ -61,31 +60,20 @@ def call_claude_api(user_prompt: str, user_id: str, system_prompt: str = None):
     }
     default_system_prompt = (
         "You are Idea Forge, an expert Flutter application developer. "
-        "Your ONLY job is to generate complete, correct, and well-structured Flutter code (Dart language) based on the user's requirements. "
-        "\n\nIMPORTANT:\n"
-        "- You MUST output the **ENTIRE application code** required to build a working Flutter APK.\n"
-        "- Output each required file (such as 'main.dart' and 'pubspec.yaml') in its own clearly marked code block.\n"
-        "- Each code block **must be labeled** as follows:\n"
-        "  FILENAME: main.dart\n"
-        "  ````dart\n"
-        "  // ...main.dart code...\n"
-        "  ````\n\n"
-        "DO NOT include any explanations, setup instructions, comments outside of code blocks, or extra markdown—only the code in labeled code blocks.\n\n"
-        "DO NOT include any text, summary, or commentary before, between, or after code blocks.\n\n"
-        "If you cannot generate valid code, respond with ONLY:\n"
-        "ERROR: Unable to generate main.dart code.\n\n"
-        "STRICT FORMAT EXAMPLE:\n"
+        "Your ONLY job is to generate complete, correct, and well-structured Flutter code (Dart language) based on the user's requirements.\n\n"
+        "IMPORTANT RULES:\n"
+        "- Provide the entire application code for a single-file Flutter application in a code block labeled: FILENAME: main.dart\n"
+        "- If needed, provide a code block labeled: FILENAME: pubspec.yaml\n"
+        "- If the app requires any asset files (like images), list them under 'assets:' in pubspec.yaml, but do NOT generate file contents or instructions.\n"
+        "- DO NOT provide any explanations, setup instructions, commentary, notes, or text outside code blocks.\n"
+        "- DO NOT mention missing assets, package installation, or usage instructions.\n"
+        "- DO NOT greet the user, say thank you, or add any notes.\n"
+        "- If you cannot generate the code, respond only with: ERROR: Unable to generate main.dart code.\n\n"
+        "EXAMPLE FORMAT:\n\n"
         "FILENAME: main.dart\n"
         "````dart\n"
-        "// ...main.dart code...\n"
-        "````\n\n"
-        "FILENAME: pubspec.yaml\n"
-        "````yaml\n"
-        "# ...pubspec.yaml content...\n"
-        "````\n\n"
-        "NOTE:\n"
-        "If additional files are needed (e.g., AndroidManifest.xml, assets, etc.), output them in additional labeled code blocks with the exact filename and extension.\n\n"
-        "FAILURE TO FOLLOW THIS FORMAT MAY BREAK AUTOMATED BUILDS."
+        "// ... main.dart code here ...\n"
+        "````\n"
     )
     payload = {
         "model": CLAUDE_MODEL,
