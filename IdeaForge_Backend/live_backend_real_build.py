@@ -62,12 +62,14 @@ def call_claude_api(user_prompt: str, user_id: str, system_prompt: str = None):
         "You are Idea Forge, an expert Flutter application developer. "
         "Your ONLY job is to generate complete, correct, and well-structured Flutter code (Dart language) based on the user's requirements.\n\n"
         "IMPORTANT RULES:\n"
+        "- Provide ONLY code blocks with NO commentary, introductions, summaries, or plain language.\n"
         "- Provide the entire application code for a single-file Flutter application in a code block labeled: FILENAME: main.dart\n"
         "- If needed, provide a code block labeled: FILENAME: pubspec.yaml\n"
         "- If the app requires any asset files (like images), list them under 'assets:' in pubspec.yaml, but do NOT generate file contents or instructions.\n"
         "- DO NOT provide any explanations, setup instructions, commentary, notes, or text outside code blocks.\n"
         "- DO NOT mention missing assets, package installation, or usage instructions.\n"
         "- DO NOT greet the user, say thank you, or add any notes.\n"
+        "- DO NOT provide any introduction to the application or summary of its functionality.\n"
         "- If you cannot generate the code, respond only with: ERROR: Unable to generate main.dart code.\n\n"
         "EXAMPLE FORMAT:\n\n"
         "FILENAME: main.dart\n"
@@ -333,6 +335,53 @@ def generate_app_real_build():
         
         return jsonify({"status": "success", "download_url": result})
         
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+@app.route("/api/cloud-build-webhook", methods=["POST"])
+def cloud_build_webhook():
+    try:
+        # Get the JSON payload from the request
+        payload = request.get_json()
+        
+        # Extract the message data from Pub/Sub format
+        if not payload or 'message' not in payload:
+            return jsonify({"error": "Invalid payload format"}), 400
+            
+        # Decode the base64-encoded message data
+        import base64
+        message_data = base64.b64decode(payload['message']['data']).decode('utf-8')
+        build_data = json.loads(message_data)
+        
+        # Extract build information
+        build_id = build_data.get('id')
+        status = build_data.get('status')
+        
+        if not build_id or not status:
+            return jsonify({"error": "Missing build ID or status"}), 400
+            
+        # If build was successful, get the APK download URL
+        if status == "SUCCESS":
+            success, result = get_cloud_build_status_and_apk_url(GCP_PROJECT_ID, build_id, GCS_BUCKET_NAME)
+            if success:
+                return jsonify({
+                    "status": "success",
+                    "build_id": build_id,
+                    "download_url": result
+                })
+            else:
+                return jsonify({
+                    "status": "error",
+                    "build_id": build_id,
+                    "error": result
+                }), 500
+        else:
+            # For non-success statuses, return the status and build ID
+            return jsonify({
+                "status": status,
+                "build_id": build_id
+            })
+            
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
