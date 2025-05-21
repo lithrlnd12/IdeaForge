@@ -1,6 +1,6 @@
 steps:
   # Build Flutter APK
-  - name: 'cirrusci/flutter:stable'
+  - name: 'ghcr.io/cirruslabs/flutter:main'
     entrypoint: 'bash'
     args:
       - '-c'
