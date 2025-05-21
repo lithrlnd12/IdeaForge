@@ -1,6 +1,6 @@
 steps:
   # Build Flutter APK
-  - name: 'gcr.io/cloud-builders/flutter'
+  - name: 'cirrusci/flutter:3.19.5'
     entrypoint: 'bash'
     args:
       - '-c'
