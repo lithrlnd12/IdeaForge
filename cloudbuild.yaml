@@ -1,6 +1,6 @@
 steps:
   # Build Flutter APK
-  - name: 'flutter/flutter:3.19.0'
+  - name: 'ghcr.io/cirruslabs/flutter:v3.19.6'
     entrypoint: 'bash'
     args:
       - '-c'
