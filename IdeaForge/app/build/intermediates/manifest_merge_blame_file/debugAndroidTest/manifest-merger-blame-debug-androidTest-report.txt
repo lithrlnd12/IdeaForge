@@ -3,32 +3,32 @@
 3    package="com.example.ideaforge.test" >
 4
 5    <uses-sdk
-5-->C:\Apps\IdeaForge_GCP_RealBuild_Release\IdeaForge\app\build\intermediates\tmp\manifest\androidTest\debug\tempFile1ProcessTestManifest18059517076087245803.xml:5:5-74
+5-->C:\Apps\IdeaForge_GCP_RealBuild_Release\IdeaForge\app\build\intermediates\tmp\manifest\androidTest\debug\tempFile1ProcessTestManifest884896029769912558.xml:5:5-74
 6        android:minSdkVersion="24"
-6-->C:\Apps\IdeaForge_GCP_RealBuild_Release\IdeaForge\app\build\intermediates\tmp\manifest\androidTest\debug\tempFile1ProcessTestManifest18059517076087245803.xml:5:15-41
+6-->C:\Apps\IdeaForge_GCP_RealBuild_Release\IdeaForge\app\build\intermediates\tmp\manifest\androidTest\debug\tempFile1ProcessTestManifest884896029769912558.xml:5:15-41
 7        android:targetSdkVersion="34" />
-7-->C:\Apps\IdeaForge_GCP_RealBuild_Release\IdeaForge\app\build\intermediates\tmp\manifest\androidTest\debug\tempFile1ProcessTestManifest18059517076087245803.xml:5:42-71
+7-->C:\Apps\IdeaForge_GCP_RealBuild_Release\IdeaForge\app\build\intermediates\tmp\manifest\androidTest\debug\tempFile1ProcessTestManifest884896029769912558.xml:5:42-71
 8
 9    <instrumentation
-9-->C:\Apps\IdeaForge_GCP_RealBuild_Release\IdeaForge\app\build\intermediates\tmp\manifest\androidTest\debug\tempFile1ProcessTestManifest18059517076087245803.xml:11:5-15:71
+9-->C:\Apps\IdeaForge_GCP_RealBuild_Release\IdeaForge\app\build\intermediates\tmp\manifest\androidTest\debug\tempFile1ProcessTestManifest884896029769912558.xml:11:5-15:71
 10        android:name="android.test.InstrumentationTestRunner"
-10-->C:\Apps\IdeaForge_GCP_RealBuild_Release\IdeaForge\app\build\intermediates\tmp\manifest\androidTest\debug\tempFile1ProcessTestManifest18059517076087245803.xml:11:22-75
+10-->C:\Apps\IdeaForge_GCP_RealBuild_Release\IdeaForge\app\build\intermediates\tmp\manifest\androidTest\debug\tempFile1ProcessTestManifest884896029769912558.xml:11:22-75
 11        android:functionalTest="false"
-11-->C:\Apps\IdeaForge_GCP_RealBuild_Release\IdeaForge\app\build\intermediates\tmp\manifest\androidTest\debug\tempFile1ProcessTestManifest18059517076087245803.xml:14:22-52
+11-->C:\Apps\IdeaForge_GCP_RealBuild_Release\IdeaForge\app\build\intermediates\tmp\manifest\androidTest\debug\tempFile1ProcessTestManifest884896029769912558.xml:14:22-52
 12        android:handleProfiling="false"
-12-->C:\Apps\IdeaForge_GCP_RealBuild_Release\IdeaForge\app\build\intermediates\tmp\manifest\androidTest\debug\tempFile1ProcessTestManifest18059517076087245803.xml:13:22-53
+12-->C:\Apps\IdeaForge_GCP_RealBuild_Release\IdeaForge\app\build\intermediates\tmp\manifest\androidTest\debug\tempFile1ProcessTestManifest884896029769912558.xml:13:22-53
 13        android:label="Tests for com.example.ideaforge"
-13-->C:\Apps\IdeaForge_GCP_RealBuild_Release\IdeaForge\app\build\intermediates\tmp\manifest\androidTest\debug\tempFile1ProcessTestManifest18059517076087245803.xml:15:22-69
+13-->C:\Apps\IdeaForge_GCP_RealBuild_Release\IdeaForge\app\build\intermediates\tmp\manifest\androidTest\debug\tempFile1ProcessTestManifest884896029769912558.xml:15:22-69
 14        android:targetPackage="com.example.ideaforge" />
-14-->C:\Apps\IdeaForge_GCP_RealBuild_Release\IdeaForge\app\build\intermediates\tmp\manifest\androidTest\debug\tempFile1ProcessTestManifest18059517076087245803.xml:12:22-67
+14-->C:\Apps\IdeaForge_GCP_RealBuild_Release\IdeaForge\app\build\intermediates\tmp\manifest\androidTest\debug\tempFile1ProcessTestManifest884896029769912558.xml:12:22-67
 15
 16    <application
-16-->C:\Apps\IdeaForge_GCP_RealBuild_Release\IdeaForge\app\build\intermediates\tmp\manifest\androidTest\debug\tempFile1ProcessTestManifest18059517076087245803.xml:7:5-9:19
+16-->C:\Apps\IdeaForge_GCP_RealBuild_Release\IdeaForge\app\build\intermediates\tmp\manifest\androidTest\debug\tempFile1ProcessTestManifest884896029769912558.xml:7:5-9:19
 17        android:debuggable="true"
 18        android:extractNativeLibs="false" >
 19        <uses-library android:name="android.test.runner" />
-19-->C:\Apps\IdeaForge_GCP_RealBuild_Release\IdeaForge\app\build\intermediates\tmp\manifest\androidTest\debug\tempFile1ProcessTestManifest18059517076087245803.xml:8:9-60
-19-->C:\Apps\IdeaForge_GCP_RealBuild_Release\IdeaForge\app\build\intermediates\tmp\manifest\androidTest\debug\tempFile1ProcessTestManifest18059517076087245803.xml:8:23-57
+19-->C:\Apps\IdeaForge_GCP_RealBuild_Release\IdeaForge\app\build\intermediates\tmp\manifest\androidTest\debug\tempFile1ProcessTestManifest884896029769912558.xml:8:9-60
+19-->C:\Apps\IdeaForge_GCP_RealBuild_Release\IdeaForge\app\build\intermediates\tmp\manifest\androidTest\debug\tempFile1ProcessTestManifest884896029769912558.xml:8:23-57
 20    </application>
 21
 22</manifest>
