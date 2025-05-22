@@ -30,12 +30,19 @@ GITHUB_REPO_URL = os.getenv("GITHUB_REPO_URL")
 GCP_SERVICE_ACCOUNT_KEY_PATH = os.getenv("GCP_SERVICE_ACCOUNT_KEY_PATH")
 GCS_BUCKET_NAME = os.getenv("GCS_BUCKET_NAME")
 
+def get_secret(secret_id, version_id="latest"):
+    project_id = os.environ.get("GCP_PROJECT_ID")
+    client = secretmanager.SecretManagerServiceClient()
+    name = f"projects/{project_id}/secrets/{secret_id}/versions/{version_id}"
+    response = client.access_secret_version(request={"name": name})
+    return response.payload.data.decode("UTF-8")
+
 # Get API key from Secret Manager
-ANTHROPIC_API_KEY = get_secret(GCP_PROJECT_ID, "anthropic-api-key")
+ANTHROPIC_API_KEY = get_secret("anthropic-api-key")
 print(f"ANTHROPIC_API_KEY loaded from Secret Manager: {'Present' if ANTHROPIC_API_KEY else 'Missing'} (Length: {len(ANTHROPIC_API_KEY) if ANTHROPIC_API_KEY else 0})")
 
 # Get API URL from Secret Manager
-ANTHROPIC_API_URL = get_secret(GCP_PROJECT_ID, "anthropic-api-url")
+ANTHROPIC_API_URL = get_secret("anthropic-api-url")
 if not ANTHROPIC_API_URL:
     ANTHROPIC_API_URL = "https://api.anthropic.com/v1/messages"
 print(f"ANTHROPIC_API_URL loaded from Secret Manager: {ANTHROPIC_API_URL}")
@@ -442,17 +449,6 @@ def validate_and_fix_dart_null_safety(content: str) -> tuple[bool, str, str]:
         return False, content, error_message
     
     return True, '\n'.join(fixed_lines), ""
-
-def get_secret(project_id: str, secret_id: str, version_id: str = "latest") -> str:
-    """Get a secret from Google Cloud Secret Manager."""
-    try:
-        client = secretmanager.SecretManagerServiceClient()
-        name = f"projects/{project_id}/secrets/{secret_id}/versions/{version_id}"
-        response = client.access_secret_version(request={"name": name})
-        return response.payload.data.decode("UTF-8")
-    except Exception as e:
-        print(f"Error accessing secret {secret_id}: {str(e)}")
-        return None
 
 @app.route("/api/v1/generate-app-real-build", methods=["POST"])
 def generate_app_real_build():
