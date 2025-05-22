@@ -200,12 +200,23 @@ def parse_generated_code(generated_text: str):
             except Exception as e:
                 return {"error": f"Error parsing pubspec.yaml assets: {str(e)}"}
         
-        # Validate main.dart format
+        # Validate main.dart format and null safety
         if filename == "main.dart":
             if not content.strip().startswith('import '):
                 return {"error": "Invalid main.dart: Missing import statements"}
             if 'void main()' not in content:
                 return {"error": "Invalid main.dart: Missing main() function"}
+            
+            # Check for uninitialized non-nullable fields
+            lines = content.split('\n')
+            for i, line in enumerate(lines):
+                line = line.strip()
+                # Look for class field declarations
+                if line and not line.startswith(('import ', '//', '/*', '*', '*/', 'class ', 'void ', 'return ', '}')):
+                    # Check for uninitialized non-nullable fields
+                    if any(field in line for field in ['double ', 'int ', 'String ', 'bool ', 'List<', 'Map<']):
+                        if '?' not in line and '=' not in line and 'required' not in line:
+                            return {"error": f"Invalid main.dart: Uninitialized non-nullable field at line {i+1}: {line}"}
     
     return files
 
