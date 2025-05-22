@@ -25,6 +25,7 @@ app = Flask(__name__)
 # Load configuration from environment variables
 PORT = int(os.getenv("PORT", "8080"))
 GCP_PROJECT_ID = os.getenv("GCP_PROJECT_ID")
+print(f"GCP_PROJECT_ID: {GCP_PROJECT_ID}")
 GITHUB_PAT = os.getenv("GITHUB_PAT")
 GITHUB_REPO_URL = os.getenv("GITHUB_REPO_URL")
 GCP_SERVICE_ACCOUNT_KEY_PATH = os.getenv("GCP_SERVICE_ACCOUNT_KEY_PATH")
