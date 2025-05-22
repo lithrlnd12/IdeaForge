@@ -16,7 +16,13 @@ from google.oauth2 import service_account # For GCP authentication
 # Load environment variables from .env file
 load_dotenv()
 
+# Initialize Flask app
 app = Flask(__name__)
+
+# Add health check endpoint
+@app.route("/", methods=["GET"])
+def health_check():
+    return jsonify({"status": "healthy"}), 200
 
 # Claude API Configuration
 ANTHROPIC_API_KEY = os.getenv("ANTHROPIC_API_KEY")
@@ -568,13 +574,15 @@ def list_apks():
         return jsonify({"error": str(e)}), 500
 
 if __name__ == "__main__":
-    # Check essential startup configurations
-    if not all([ANTHROPIC_API_KEY, GITHUB_PAT, GITHUB_REPO_URL, GCP_PROJECT_ID, GCP_SERVICE_ACCOUNT_KEY_PATH, GCS_BUCKET_NAME]):
-        print("CRITICAL ERROR: One or more environment variables are not set. Please check your .env file.")
-        print("Required: ANTHROPIC_API_KEY, GITHUB_PAT, GITHUB_REPO_URL, GCP_PROJECT_ID, GCP_SERVICE_ACCOUNT_KEY_PATH, GCS_BUCKET_NAME")
-    else:
-        # Get port from environment variable, default to 8080
-        port = int(os.getenv("PORT", "8080"))
-        print(f"All configurations loaded. Starting Flask app on 0.0.0.0:{port} for Idea Forge Live Backend with Real Builds.")
-        app.run(host="0.0.0.0", port=port, debug=True) # debug=False for production
+    # Get port from environment variable, default to 8080
+    port = int(os.getenv("PORT", "8080"))
+    
+    # Start the app immediately
+    print(f"Starting Flask app on 0.0.0.0:{port}")
+    app.run(host="0.0.0.0", port=port, debug=False)  # debug=False for production
+else:
+    # For Cloud Run, we need to ensure the app is created
+    app = Flask(__name__)
+    port = int(os.getenv("PORT", "8080"))
+    print(f"App created for Cloud Run on port {port}")
 
