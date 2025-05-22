@@ -6,12 +6,15 @@ import random
 import subprocess
 import shutil
 import uuid # For unique temporary directory names
+import base64
+import tempfile
 from flask import Flask, request, jsonify
 from dotenv import load_dotenv
 from google.cloud import storage
 from google.cloud.devtools.cloudbuild_v1.services import cloud_build
 from google.cloud.devtools.cloudbuild_v1.types import Build, RepoSource, StorageSource
 from google.oauth2 import service_account # For GCP authentication
+from google.cloud import secretmanager
 
 # Load environment variables from .env file
 load_dotenv()
@@ -19,42 +22,30 @@ load_dotenv()
 # Initialize Flask app at the top
 app = Flask(__name__)
 
-# Add health check endpoint
-@app.route("/health", methods=["GET"])
-def health_check():
-    return jsonify({"status": "healthy"}), 200
-
-# Root endpoint also serves as health check
-@app.route("/", methods=["GET"])
-def root():
-    return jsonify({"status": "healthy"}), 200
-
-# Temporary debug route - REMOVE AFTER DEBUGGING
-@app.route("/debug/env", methods=["GET"])
-def debug_env():
-    env_vars = {}
-    for key in os.environ:
-        value = os.environ[key]
-        env_vars[key] = {
-            "length": len(value),
-            "present": bool(value)
-        }
-    return jsonify(env_vars), 200
-
-# Claude API Configuration
-ANTHROPIC_API_KEY = os.getenv("ANTHROPIC_API_KEY")
-print(f"ANTHROPIC_API_KEY loaded: {'Present' if ANTHROPIC_API_KEY else 'Missing'} (Length: {len(ANTHROPIC_API_KEY) if ANTHROPIC_API_KEY else 0})")
-CLAUDE_MODEL = "claude-3.7-sonnet"
-ANTHROPIC_API_URL = "https://api.anthropic.com/v1/messages"
-
-# GitHub Configuration
-GITHUB_PAT = os.getenv("GITHUB_PAT")
-GITHUB_REPO_URL = os.getenv("GITHUB_REPO_URL") # e.g., https://github.com/lithrlnd12/IdeaForge.git
-
-# GCP Configuration
+# Load configuration from environment variables
+PORT = int(os.getenv("PORT", "8080"))
 GCP_PROJECT_ID = os.getenv("GCP_PROJECT_ID")
+GITHUB_PAT = os.getenv("GITHUB_PAT")
+GITHUB_REPO_URL = os.getenv("GITHUB_REPO_URL")
 GCP_SERVICE_ACCOUNT_KEY_PATH = os.getenv("GCP_SERVICE_ACCOUNT_KEY_PATH")
 GCS_BUCKET_NAME = os.getenv("GCS_BUCKET_NAME")
+
+# Get API key from Secret Manager
+ANTHROPIC_API_KEY = get_secret(GCP_PROJECT_ID, "anthropic-api-key")
+print(f"ANTHROPIC_API_KEY loaded from Secret Manager: {'Present' if ANTHROPIC_API_KEY else 'Missing'} (Length: {len(ANTHROPIC_API_KEY) if ANTHROPIC_API_KEY else 0})")
+
+# Get API URL from Secret Manager
+ANTHROPIC_API_URL = get_secret(GCP_PROJECT_ID, "anthropic-api-url")
+if not ANTHROPIC_API_URL:
+    ANTHROPIC_API_URL = "https://api.anthropic.com/v1/messages"
+print(f"ANTHROPIC_API_URL loaded from Secret Manager: {ANTHROPIC_API_URL}")
+
+# Claude API Configuration
+CLAUDE_MODEL = "claude-3.7-sonnet"
+
+# GitHub Configuration
+
+# GCP Configuration
 
 # In-memory storage for build statuses and APK links
 build_statuses = {}
@@ -452,6 +443,17 @@ def validate_and_fix_dart_null_safety(content: str) -> tuple[bool, str, str]:
     
     return True, '\n'.join(fixed_lines), ""
 
+def get_secret(project_id: str, secret_id: str, version_id: str = "latest") -> str:
+    """Get a secret from Google Cloud Secret Manager."""
+    try:
+        client = secretmanager.SecretManagerServiceClient()
+        name = f"projects/{project_id}/secrets/{secret_id}/versions/{version_id}"
+        response = client.access_secret_version(request={"name": name})
+        return response.payload.data.decode("UTF-8")
+    except Exception as e:
+        print(f"Error accessing secret {secret_id}: {str(e)}")
+        return None
+
 @app.route("/api/v1/generate-app-real-build", methods=["POST"])
 def generate_app_real_build():
     try:
@@ -545,7 +547,6 @@ def cloud_build_webhook():
             return jsonify({"error": "Invalid payload format"}), 400
             
         # Decode the base64-encoded message data
-        import base64
         message_data = base64.b64decode(payload['message']['data']).decode('utf-8')
         build_data = json.loads(message_data)
         
@@ -599,22 +600,18 @@ def list_apks():
         return jsonify({"error": str(e)}), 500
 
 if __name__ == "__main__":
-    # Get port from environment variable, default to 8080
-    port = int(os.getenv("PORT", "8080"))
-    
     # Log startup information
-    print(f"Starting Flask app on 0.0.0.0:{port}")
+    print(f"Starting Flask app on 0.0.0.0:{PORT}")
     print(f"Environment: {'Production' if os.getenv('FLASK_ENV') == 'production' else 'Development'}")
     print(f"Debug mode: {'Enabled' if os.getenv('FLASK_DEBUG') == '1' else 'Disabled'}")
     
     # Start the app immediately
-    app.run(host="0.0.0.0", port=port, debug=False)  # debug=False for production
+    app.run(host="0.0.0.0", port=PORT, debug=False)  # debug=False for production
     print(f"ANTHROPIC_API_KEY status at startup: {'Present' if ANTHROPIC_API_KEY else 'Missing'} (Length: {len(ANTHROPIC_API_KEY) if ANTHROPIC_API_KEY else 0})")
     print(f"ANTHROPIC_API_URL: {ANTHROPIC_API_URL} (Valid: {ANTHROPIC_API_URL == 'https://api.anthropic.com/v1/messages'})")
 else:
     # For Cloud Run, we need to ensure the app is created
-    port = int(os.getenv("PORT", "8080"))
-    print(f"App created for Cloud Run on port {port}")
+    print(f"App created for Cloud Run on port {PORT}")
     print(f"ANTHROPIC_API_KEY status at startup: {'Present' if ANTHROPIC_API_KEY else 'Missing'} (Length: {len(ANTHROPIC_API_KEY) if ANTHROPIC_API_KEY else 0})")
     print(f"ANTHROPIC_API_URL: {ANTHROPIC_API_URL} (Valid: {ANTHROPIC_API_URL == 'https://api.anthropic.com/v1/messages'})")
 
