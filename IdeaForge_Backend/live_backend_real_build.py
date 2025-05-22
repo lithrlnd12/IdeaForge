@@ -317,6 +317,28 @@ def trigger_cloud_build(project_id: str, repo_url: str, branch_name: str = "gene
         print(error_message)
         return None, error_message
 
+# --- Helper: List Latest APKs in GCS ---
+def list_latest_apks(bucket_name: str, prefix: str = "ideaforge-builds/") -> list:
+    """
+    Lists the latest APK files in the specified GCS bucket.
+    Returns a list of (blob_name, signed_url) tuples.
+    """
+    credentials = get_gcp_credentials()
+    if not credentials:
+        return []
+    
+    storage_client = storage.Client(credentials=credentials)
+    bucket = storage_client.bucket(bucket_name)
+    
+    try:
+        blobs = list(bucket.list_blobs(prefix=prefix))
+        apk_blobs = [(blob.name, blob.generate_signed_url(version="v4", expiration=3600)) 
+                    for blob in blobs if blob.name.endswith('.apk')]
+        return sorted(apk_blobs, key=lambda x: x[0], reverse=True)
+    except Exception as e:
+        print(f"Error listing APKs: {e}")
+        return []
+
 def get_cloud_build_status_and_apk_url(project_id: str, build_id: str, gcs_bucket_name: str):
     credentials = get_gcp_credentials()
     if not credentials:
@@ -332,45 +354,23 @@ def get_cloud_build_status_and_apk_url(project_id: str, build_id: str, gcs_bucke
 
         apk_url = None
         if status == "SUCCESS":
-            # Construct the expected APK path based on cloudbuild.yaml
-            # Example: gs://ideaforge-apks-aaron/ideaforge-builds/${SHORT_SHA}_app-release.apk
-            # We need to list objects or know the exact name. For now, let_s assume a convention or find the latest.
-            # This part is tricky without knowing the exact commit SHA used by the build.
-            # A more robust way is to have cloudbuild.yaml output a manifest or a fixed name, or use build tags.
+            # Look for APK artifacts in the build results
+            if build_info.results and build_info.results.artifacts:
+                for artifact in build_info.results.artifacts.objects:
+                    if artifact.location.startswith(f"gs://{gcs_bucket_name}/") and artifact.location.endswith(".apk"):
+                        blob_name = artifact.location[len(f"gs://{gcs_bucket_name}/"):]
+                        bucket = storage_client.bucket(gcs_bucket_name)
+                        blob = bucket.blob(blob_name)
+                        apk_url = blob.generate_signed_url(version="v4", expiration=3600)
+                        print(f"Found APK artifact: {blob_name}")
+                        break
             
-            # Let_s try to find the artifact from build_info if available
-            if build_info.results and build_info.results.artifacts and build_info.results.artifacts.objects:
-                apk_path_in_gcs = build_info.results.artifacts.objects.location
-                # This location is like gs://bucket/path/to/object
-                # We need to parse it to get bucket and object name
-                if apk_path_in_gcs.startswith(f"gs://{gcs_bucket_name}/"):
-                    blob_name = apk_path_in_gcs[len(f"gs://{gcs_bucket_name}/"):]
-                    bucket = storage_client.bucket(gcs_bucket_name)
-                    blob = bucket.blob(blob_name)
-                    # Generate a signed URL for download (valid for 1 hour)
-                    apk_url = blob.generate_signed_url(version="v4", expiration=3600) # 1 hour
-                    print(f"Generated signed URL for APK: {apk_url}")
-                else:
-                    print(f"Artifact path {apk_path_in_gcs} does not match expected bucket {gcs_bucket_name}")
-            else:
-                 print(f"Build {build_id} successful, but no artifact objects found in build results. Check cloudbuild.yaml artifacts section.")
-                 # Fallback: try listing the bucket (less ideal)
-                 # This is a simplified fallback and might not get the correct APK
-                 # It assumes the APK is the latest in the /ideaforge-builds/ prefix
-                 prefix_to_list = "ideaforge-builds/"
-                 blobs = storage_client.list_blobs(gcs_bucket_name, prefix=prefix_to_list)
-                 latest_blob = None
-                 latest_time = None
-                 for blob_item in blobs:
-                     if blob_item.name.endswith(".apk"):
-                         if latest_time is None or blob_item.updated > latest_time:
-                             latest_time = blob_item.updated
-                             latest_blob = blob_item
-                 if latest_blob:
-                     apk_url = latest_blob.generate_signed_url(version="v4", expiration=3600)
-                     print(f"Found latest APK via listing: {latest_blob.name}, URL: {apk_url}")
-                 else:
-                     print(f"No APKs found in gs://{gcs_bucket_name}/{prefix_to_list}")
+            # If no artifact found in build results, try listing the bucket
+            if not apk_url:
+                apks = list_latest_apks(gcs_bucket_name)
+                if apks:
+                    apk_url = apks[0][1]  # Get the signed URL of the latest APK
+                    print(f"Found latest APK via bucket listing")
 
         return status, build_info.log_url, apk_url
 
@@ -530,20 +530,20 @@ def cloud_build_webhook():
             
         # If build was successful, get the APK download URL
         if status == "SUCCESS":
-            success, result = get_cloud_build_status_and_apk_url(GCP_PROJECT_ID, build_id, GCS_BUCKET_NAME)
-            if success:
+            status, log_url, apk_url = get_cloud_build_status_and_apk_url(GCP_PROJECT_ID, build_id, GCS_BUCKET_NAME)
+            if apk_url:
                 # Store the download URL
-                build_statuses[build_id]["download_url"] = result
+                build_statuses[build_id]["download_url"] = apk_url
                 return jsonify({
                     "status": "success",
                     "build_id": build_id,
-                    "download_url": result
+                    "download_url": apk_url
                 })
             else:
                 return jsonify({
                     "status": "error",
                     "build_id": build_id,
-                    "error": result
+                    "error": "APK not found in build artifacts"
                 }), 500
         else:
             # For non-success statuses, return the status and build ID
@@ -552,6 +552,18 @@ def cloud_build_webhook():
                 "build_id": build_id
             })
             
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+@app.route("/api/list-apks", methods=["GET"])
+def list_apks():
+    """Endpoint to list available APKs in the GCS bucket"""
+    try:
+        apks = list_latest_apks(GCS_BUCKET_NAME)
+        return jsonify({
+            "status": "success",
+            "apks": [{"name": name, "url": url} for name, url in apks]
+        })
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
