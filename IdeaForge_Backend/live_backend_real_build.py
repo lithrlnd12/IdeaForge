@@ -29,8 +29,21 @@ def health_check():
 def root():
     return jsonify({"status": "healthy"}), 200
 
+# Temporary debug route - REMOVE AFTER DEBUGGING
+@app.route("/debug/env", methods=["GET"])
+def debug_env():
+    env_vars = {}
+    for key in os.environ:
+        value = os.environ[key]
+        env_vars[key] = {
+            "length": len(value),
+            "present": bool(value)
+        }
+    return jsonify(env_vars), 200
+
 # Claude API Configuration
 ANTHROPIC_API_KEY = os.getenv("ANTHROPIC_API_KEY")
+print(f"ANTHROPIC_API_KEY loaded: {'Present' if ANTHROPIC_API_KEY else 'Missing'} (Length: {len(ANTHROPIC_API_KEY) if ANTHROPIC_API_KEY else 0})")
 CLAUDE_MODEL = "claude-3.7-sonnet"
 ANTHROPIC_API_URL = "https://api.anthropic.com/v1/messages"
 
@@ -118,9 +131,16 @@ def call_claude_api(user_prompt: str, user_id: str, system_prompt: str = None):
         conversation_history[user_id] = current_user_history[-10:]
         return api_response_json, 200, generated_text
     except requests.exceptions.RequestException as e:
-        # ... (existing error handling) ...
+        error_details = {
+            "url": ANTHROPIC_API_URL,
+            "status_code": getattr(e.response, 'status_code', None) if hasattr(e, 'response') else None,
+            "response_body": getattr(e.response, 'text', None) if hasattr(e, 'response') else None,
+            "error": str(e)
+        }
+        print(f"Error calling Claude API: {json.dumps(error_details, indent=2)}")
         return {"error": f"Error calling Claude API: {e}"}, 500, None
     except Exception as e:
+        print(f"Unexpected error calling Claude API at {ANTHROPIC_API_URL}: {str(e)}")
         return {"error": f"An unexpected error occurred: {e}"}, 500, None
 
 # --- Helper: Parse AI Generated Code ---
@@ -589,8 +609,12 @@ if __name__ == "__main__":
     
     # Start the app immediately
     app.run(host="0.0.0.0", port=port, debug=False)  # debug=False for production
+    print(f"ANTHROPIC_API_KEY status at startup: {'Present' if ANTHROPIC_API_KEY else 'Missing'} (Length: {len(ANTHROPIC_API_KEY) if ANTHROPIC_API_KEY else 0})")
+    print(f"ANTHROPIC_API_URL: {ANTHROPIC_API_URL} (Valid: {ANTHROPIC_API_URL == 'https://api.anthropic.com/v1/messages'})")
 else:
     # For Cloud Run, we need to ensure the app is created
     port = int(os.getenv("PORT", "8080"))
     print(f"App created for Cloud Run on port {port}")
+    print(f"ANTHROPIC_API_KEY status at startup: {'Present' if ANTHROPIC_API_KEY else 'Missing'} (Length: {len(ANTHROPIC_API_KEY) if ANTHROPIC_API_KEY else 0})")
+    print(f"ANTHROPIC_API_URL: {ANTHROPIC_API_URL} (Valid: {ANTHROPIC_API_URL == 'https://api.anthropic.com/v1/messages'})")
 
