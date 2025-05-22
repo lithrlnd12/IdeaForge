@@ -573,6 +573,8 @@ if __name__ == "__main__":
         print("CRITICAL ERROR: One or more environment variables are not set. Please check your .env file.")
         print("Required: ANTHROPIC_API_KEY, GITHUB_PAT, GITHUB_REPO_URL, GCP_PROJECT_ID, GCP_SERVICE_ACCOUNT_KEY_PATH, GCS_BUCKET_NAME")
     else:
-        print(f"All configurations loaded. Starting Flask app on 0.0.0.0:8080 for Idea Forge Live Backend with Real Builds.")
-        app.run(host="0.0.0.0", port=8080, debug=True) # debug=False for production
+        # Get port from environment variable, default to 8080
+        port = int(os.getenv("PORT", "8080"))
+        print(f"All configurations loaded. Starting Flask app on 0.0.0.0:{port} for Idea Forge Live Backend with Real Builds.")
+        app.run(host="0.0.0.0", port=port, debug=True) # debug=False for production
 
