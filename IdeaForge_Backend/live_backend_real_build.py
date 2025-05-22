@@ -121,6 +121,8 @@ def parse_generated_code(generated_text: str):
     lines = generated_text.split('\n')
     
     for line in lines:
+        line = line.rstrip()  # Remove trailing whitespace but preserve leading
+        
         # Check for code block markers
         if line.strip().startswith('```'):
             if not in_code_block:
@@ -133,6 +135,7 @@ def parse_generated_code(generated_text: str):
                     current_filename = parts[1].strip()
                 else:
                     current_language = parts[0].strip()
+                continue  # Skip the marker line
             else:
                 # End of code block
                 in_code_block = False
@@ -149,7 +152,7 @@ def parse_generated_code(generated_text: str):
                 current_text = []
                 current_filename = None
                 current_language = None
-            continue
+                continue  # Skip the marker line
             
         if in_code_block:
             current_text.append(line)
@@ -169,6 +172,40 @@ def parse_generated_code(generated_text: str):
         return {"error": "Missing required file: main.dart"}
     if "pubspec.yaml" not in files:
         return {"error": "Missing required file: pubspec.yaml"}
+    
+    # Validate file contents
+    for filename, content in files.items():
+        # Check for stray backticks or markdown syntax
+        if '```' in content:
+            return {"error": f"Invalid content in {filename}: Contains markdown code block markers"}
+        if 'FILENAME:' in content:
+            return {"error": f"Invalid content in {filename}: Contains filename markers"}
+        
+        # Validate pubspec.yaml format
+        if filename == "pubspec.yaml":
+            try:
+                import yaml
+                yaml.safe_load(content)  # Validate YAML syntax
+            except yaml.YAMLError as e:
+                return {"error": f"Invalid YAML syntax in pubspec.yaml: {str(e)}"}
+            
+            # Check for asset references
+            try:
+                yaml_content = yaml.safe_load(content)
+                if 'flutter' in yaml_content and 'assets' in yaml_content['flutter']:
+                    assets = yaml_content['flutter']['assets']
+                    for asset in assets:
+                        if asset.startswith('assets/') and asset not in files:
+                            return {"error": f"Missing required asset file: {asset}"}
+            except Exception as e:
+                return {"error": f"Error parsing pubspec.yaml assets: {str(e)}"}
+        
+        # Validate main.dart format
+        if filename == "main.dart":
+            if not content.strip().startswith('import '):
+                return {"error": "Invalid main.dart: Missing import statements"}
+            if 'void main()' not in content:
+                return {"error": "Invalid main.dart: Missing main() function"}
     
     return files
 
@@ -204,8 +241,8 @@ def update_github_repository(generated_files: dict, repo_url: str, pat: str, com
                     print(f"Skipping non-standard file: {filename}")
                     continue
             
-            # Write the file
-            with open(file_path, "w") as f:
+            # Write the file with proper line endings
+            with open(file_path, "w", newline='\n') as f:
                 f.write(content)
         
         # Git commit and push
