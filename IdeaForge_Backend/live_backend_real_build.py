@@ -76,6 +76,10 @@ def call_claude_api(user_prompt: str, user_id: str, system_prompt: str = None):
         "- DO NOT greet the user, say thank you, or add any notes.\n"
         "- DO NOT provide any introduction to the application or summary of its functionality.\n"
         "- If you cannot generate the code, respond only with: ERROR: Unable to generate main.dart code.\n\n"
+        "IMPORTANT: All Dart code MUST comply with Dart 3+ null safety.\n"
+        "- Every non-nullable field must be either initialized with a default value, marked as nullable (with ?), or set as required in the constructor.\n"
+        "- DO NOT leave any non-nullable field uninitialized.\n"
+        "- Code must build successfully with Flutter 3.10+ and Dart 3.7+.\n\n"
         "EXAMPLE FORMAT:\n\n"
         "FILENAME: main.dart\n"
         "````dart\n"
@@ -375,6 +379,48 @@ def get_cloud_build_status_and_apk_url(project_id: str, build_id: str, gcs_bucke
         print(error_message)
         return "ERROR", None, None
 
+# --- Helper: Validate and Fix Dart Null Safety ---
+def validate_and_fix_dart_null_safety(content: str) -> tuple[bool, str, str]:
+    """
+    Validates and attempts to fix non-nullable fields in Dart code.
+    Returns (success, fixed_content, error_message)
+    """
+    lines = content.split('\n')
+    fixed_lines = []
+    errors = []
+    
+    # Common non-nullable types to check
+    non_nullable_types = [
+        'double', 'int', 'String', 'bool', 'Color', 'List<', 'Map<',
+        'Widget', 'BuildContext', 'State<', 'Key', 'Duration'
+    ]
+    
+    for i, line in enumerate(lines):
+        line = line.rstrip()
+        original_line = line
+        
+        # Skip comments, imports, and other non-field declarations
+        if any(line.strip().startswith(prefix) for prefix in ['//', '/*', '*', '*/', 'import ', 'class ', 'void ', 'return ', '}']):
+            fixed_lines.append(line)
+            continue
+            
+        # Check for uninitialized non-nullable fields
+        for type_name in non_nullable_types:
+            if f"{type_name} " in line and '?' not in line and '=' not in line and 'required' not in line:
+                # Try to determine if it's a field declaration
+                if ';' in line and not any(keyword in line for keyword in ['void', 'return', 'if', 'for', 'while']):
+                    errors.append(f"Line {i+1}: Non-nullable field without initialization: {line.strip()}")
+                    # Don't add the line to fixed_lines, effectively removing it
+                    continue
+        
+        fixed_lines.append(line)
+    
+    if errors:
+        error_message = "Code contains non-nullable fields without initialization:\n" + "\n".join(errors)
+        return False, content, error_message
+    
+    return True, '\n'.join(fixed_lines), ""
+
 @app.route("/api/v1/generate-app-real-build", methods=["POST"])
 def generate_app_real_build():
     try:
@@ -391,6 +437,13 @@ def generate_app_real_build():
         files = parse_generated_code(generated_text)
         if "error" in files:
             return jsonify({"error": files["error"]}), 400
+        
+        # Validate and fix Dart null safety
+        if "main.dart" in files:
+            success, fixed_content, error_message = validate_and_fix_dart_null_safety(files["main.dart"])
+            if not success:
+                return jsonify({"error": error_message}), 400
+            files["main.dart"] = fixed_content
         
         # Log successful extraction
         print(f"Successfully extracted files: {list(files.keys())}")
