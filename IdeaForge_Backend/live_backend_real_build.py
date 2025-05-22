@@ -32,6 +32,9 @@ GCP_PROJECT_ID = os.getenv("GCP_PROJECT_ID")
 GCP_SERVICE_ACCOUNT_KEY_PATH = os.getenv("GCP_SERVICE_ACCOUNT_KEY_PATH")
 GCS_BUCKET_NAME = os.getenv("GCS_BUCKET_NAME")
 
+# In-memory storage for build statuses and APK links
+build_statuses = {}
+
 # --- Helper: GCP Credentials ---
 def get_gcp_credentials():
     if not GCP_SERVICE_ACCOUNT_KEY_PATH:
@@ -338,6 +341,35 @@ def generate_app_real_build():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
+@app.route("/api/build-status/<build_id>", methods=["GET"])
+def get_build_status(build_id):
+    try:
+        # Check if we have stored status for this build
+        if build_id not in build_statuses:
+            return jsonify({
+                "error": "Build ID not found",
+                "build_id": build_id
+            }), 404
+
+        build_info = build_statuses[build_id]
+        
+        # If build is complete and we have a download URL
+        if build_info["status"] == "SUCCESS" and "download_url" in build_info:
+            return jsonify({
+                "status": "success",
+                "build_id": build_id,
+                "download_url": build_info["download_url"]
+            })
+        
+        # For builds in progress or failed
+        return jsonify({
+            "status": build_info["status"],
+            "build_id": build_id
+        })
+        
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
 @app.route("/api/cloud-build-webhook", methods=["POST"])
 def cloud_build_webhook():
     try:
@@ -360,10 +392,15 @@ def cloud_build_webhook():
         if not build_id or not status:
             return jsonify({"error": "Missing build ID or status"}), 400
             
+        # Store the build status
+        build_statuses[build_id] = {"status": status}
+            
         # If build was successful, get the APK download URL
         if status == "SUCCESS":
             success, result = get_cloud_build_status_and_apk_url(GCP_PROJECT_ID, build_id, GCS_BUCKET_NAME)
             if success:
+                # Store the download URL
+                build_statuses[build_id]["download_url"] = result
                 return jsonify({
                     "status": "success",
                     "build_id": build_id,
