@@ -16,12 +16,17 @@ from google.oauth2 import service_account # For GCP authentication
 # Load environment variables from .env file
 load_dotenv()
 
-# Initialize Flask app
+# Initialize Flask app at the top
 app = Flask(__name__)
 
 # Add health check endpoint
-@app.route("/", methods=["GET"])
+@app.route("/health", methods=["GET"])
 def health_check():
+    return jsonify({"status": "healthy"}), 200
+
+# Root endpoint also serves as health check
+@app.route("/", methods=["GET"])
+def root():
     return jsonify({"status": "healthy"}), 200
 
 # Claude API Configuration
@@ -577,12 +582,15 @@ if __name__ == "__main__":
     # Get port from environment variable, default to 8080
     port = int(os.getenv("PORT", "8080"))
     
-    # Start the app immediately
+    # Log startup information
     print(f"Starting Flask app on 0.0.0.0:{port}")
+    print(f"Environment: {'Production' if os.getenv('FLASK_ENV') == 'production' else 'Development'}")
+    print(f"Debug mode: {'Enabled' if os.getenv('FLASK_DEBUG') == '1' else 'Disabled'}")
+    
+    # Start the app immediately
     app.run(host="0.0.0.0", port=port, debug=False)  # debug=False for production
 else:
     # For Cloud Run, we need to ensure the app is created
-    app = Flask(__name__)
     port = int(os.getenv("PORT", "8080"))
     print(f"App created for Cloud Run on port {port}")
 

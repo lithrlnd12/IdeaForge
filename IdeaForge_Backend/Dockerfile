@@ -1,37 +1,30 @@
-# Use the official Python image.
-FROM python:3.10-slim
-
-# Install git
-RUN apt-get update && apt-get install -y git && rm -rf /var/lib/apt/lists/*
+# Use Python 3.9 slim image
+FROM python:3.9-slim
 
 # Set working directory
 WORKDIR /app
 
-# Create and activate virtual environment
-RUN python -m venv /opt/venv
-ENV PATH="/opt/venv/bin:$PATH"
+# Install system dependencies
+RUN apt-get update && apt-get install -y \
+    git \
+    && rm -rf /var/lib/apt/lists/*
 
-# Create a non-root user
-RUN useradd -m -u 1000 appuser
-
-# Copy requirements and install
+# Copy requirements first to leverage Docker cache
 COPY requirements.txt .
+
+# Install Python dependencies
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copy the rest of the code
+# Copy the rest of the application
 COPY . .
 
-# Change ownership of the app directory
-RUN chown -R appuser:appuser /app /opt/venv
+# Set environment variables
+ENV FLASK_APP=live_backend_real_build.py
+ENV FLASK_ENV=production
+ENV PORT=8080
 
-# Switch to non-root user
-USER appuser
-
-# Set global git user/email for appuser
-RUN git config --global user.email "ideaforge-bot@example.com" && git config --global user.name "IdeaForge Bot"
-
-# Expose port 8080 for Cloud Run
+# Expose the port
 EXPOSE 8080
 
-# Run the Flask app
-CMD ["python", "live_backend.py"] 
+# Run the application
+CMD ["python", "live_backend_real_build.py"] 
