@@ -111,45 +111,66 @@ def call_claude_api(user_prompt: str, user_id: str, system_prompt: str = None):
 # --- Helper: Parse AI Generated Code ---
 def parse_generated_code(generated_text: str):
     files = {}
-    try:
-        parts = generated_text.split("FILENAME:")
-        for part in parts:
-            if not part.strip():
-                continue
-            lines = part.strip().split("\n", 1)
-            filename = lines[0].strip()
-            code_content = ""
-            if len(lines) > 1:
-                code_block = lines[1].strip()
-                if code_block.startswith("```") and code_block.endswith("```"):
-                    code_content = code_block[code_block.find("\n") + 1 : code_block.rfind("\n")].strip()
-                elif code_block.startswith("```"):
-                    code_content = code_block[code_block.find("\n") + 1 :].strip()
-                    if code_content.endswith("```"):
-                        code_content = code_content[:-3].strip()
+    ignored_text = []
+    current_text = []
+    in_code_block = False
+    current_filename = None
+    current_language = None
+    
+    # Split text into lines for processing
+    lines = generated_text.split('\n')
+    
+    for line in lines:
+        # Check for code block markers
+        if line.strip().startswith('```'):
+            if not in_code_block:
+                # Start of code block
+                in_code_block = True
+                # Extract filename if present (e.g., ```dart:main.dart or ```yaml:pubspec.yaml)
+                parts = line.strip()[3:].split(':')
+                if len(parts) > 1:
+                    current_language = parts[0].strip()
+                    current_filename = parts[1].strip()
                 else:
-                    code_content = code_block
+                    current_language = parts[0].strip()
+            else:
+                # End of code block
+                in_code_block = False
+                if current_filename and current_text:
+                    # Only accept main.dart, pubspec.yaml, and asset files
+                    if current_filename in ["main.dart", "pubspec.yaml"]:
+                        files[current_filename] = '\n'.join(current_text)
+                    elif "main.dart" in current_filename:
+                        files["main.dart"] = '\n'.join(current_text)
+                    elif "pubspec.yaml" in current_filename:
+                        files["pubspec.yaml"] = '\n'.join(current_text)
+                    elif current_filename.startswith("assets/"):
+                        files[current_filename] = '\n'.join(current_text)
+                current_text = []
+                current_filename = None
+                current_language = None
+            continue
             
-            # Only accept main.dart, pubspec.yaml, and asset files
-            if filename in ["main.dart", "pubspec.yaml"]:
-                files[filename] = code_content
-            elif "main.dart" in filename:
-                files["main.dart"] = code_content
-            elif "pubspec.yaml" in filename:
-                files["pubspec.yaml"] = code_content
-            elif filename.startswith("assets/"):
-                files[filename] = code_content
-        
-        # Validate required files
-        if "main.dart" not in files:
-            return {"error": "Missing required file: main.dart"}
-        if "pubspec.yaml" not in files:
-            return {"error": "Missing required file: pubspec.yaml"}
-        
-        return files
-    except Exception as e:
-        print(f"Error parsing generated code: {e}")
-        return {"error": f"Error parsing generated code: {str(e)}"}
+        if in_code_block:
+            current_text.append(line)
+        else:
+            # Collect non-code text for logging
+            if line.strip() and not line.strip().startswith('FILENAME:'):
+                ignored_text.append(line.strip())
+    
+    # Log ignored text if any
+    if ignored_text:
+        print("Ignored non-code text from AI response:")
+        for text in ignored_text:
+            print(f"- {text}")
+    
+    # Validate required files
+    if "main.dart" not in files:
+        return {"error": "Missing required file: main.dart"}
+    if "pubspec.yaml" not in files:
+        return {"error": "Missing required file: pubspec.yaml"}
+    
+    return files
 
 # --- Helper: Git Operations ---
 def update_github_repository(generated_files: dict, repo_url: str, pat: str, commit_message: str):
@@ -323,6 +344,9 @@ def generate_app_real_build():
         if "error" in files:
             return jsonify({"error": files["error"]}), 400
         
+        # Log successful extraction
+        print(f"Successfully extracted files: {list(files.keys())}")
+        
         # Update GitHub repository
         success, message = update_github_repository(files, GITHUB_REPO_URL, GITHUB_PAT, "Update Flutter app files")
         if not success:
@@ -333,14 +357,20 @@ def generate_app_real_build():
         if not build_id:
             return jsonify({"error": build_message}), 500
         
-        # Poll build status and get APK URL
-        success, result = get_cloud_build_status_and_apk_url(GCP_PROJECT_ID, build_id, GCS_BUCKET_NAME)
-        if not success:
-            return jsonify({"error": result}), 500
+        # Store initial build status
+        build_statuses[build_id] = {
+            "status": "PENDING",
+            "message": "Build triggered successfully"
+        }
         
-        return jsonify({"status": "success", "download_url": result})
+        return jsonify({
+            "status": "success",
+            "build_id": build_id,
+            "message": "Build triggered successfully"
+        })
         
     except Exception as e:
+        print(f"Error in generate_app_real_build: {str(e)}")
         return jsonify({"error": str(e)}), 500
 
 @app.route("/api/build-status/<build_id>", methods=["GET"])
