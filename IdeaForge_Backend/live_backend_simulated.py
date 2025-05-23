@@ -155,6 +155,6 @@ if __name__ == "__main__":
         print("Error: ANTHROPIC_API_KEY environment variable not set.")
         print("Please create a .env file with ANTHROPIC_API_KEY=\'your_key\' or set the environment variable.")
     else:
-        print(f"ANTHROPIC_API_KEY loaded. Starting Flask app on 0.0.0.0:5001 for Idea Forge Live Backend.")
-        app.run(host="0.0.0.0", port=5001, debug=True)
+        print(f"ANTHROPIC_API_KEY loaded. Starting Flask app on 0.0.0.0:8080 for Idea Forge Live Backend.")
+        app.run(host="0.0.0.0", port=8080, debug=True)
 

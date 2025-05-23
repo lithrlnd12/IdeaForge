@@ -8,19 +8,24 @@ import java.io.InputStreamReader
 import java.io.OutputStreamWriter
 import java.net.HttpURLConnection
 import java.net.URL
+import android.util.Log
+import com.example.ideaforge.BuildConfig
 
 object LiveBackendClient {
-    // Ensure this matches the address your Flask backend is running on.
-    // For testing with Android Emulator, "10.0.2.2" usually points to the host machine.
-    // The backend is set to run on port 8080.
-    // For cloud deployment, use the Cloud Run URL:
-    private const val BASE_URL = "https://ideaforge-backend-921972313555.us-central1.run.app/api/v1/"
+    // Production Cloud Run URL
+    private const val PROD_BASE_URL = "https://ideaforge-backend-921972313555.us-central1.run.app/api/v1/"
+    
+    // Get BASE_URL from BuildConfig or use default
+    private val BASE_URL: String = BuildConfig.BACKEND_URL.ifEmpty { PROD_BASE_URL }.apply {
+        Log.d("LiveBackendClient", "Using backend URL: $this")
+    }
 
     suspend fun generateAppWithLiveAI(prompt: String, userId: String = "live_user", systemPromptOverride: String? = null): Pair<String?, JSONObject?> {
         return withContext(Dispatchers.IO) {
             var connection: HttpURLConnection? = null
             try {
                 val url = URL("${BASE_URL}generate-app-real-build")
+                Log.d("LiveBackendClient", "Making request to: $url")
                 connection = url.openConnection() as HttpURLConnection
                 connection.requestMethod = "POST"
                 connection.setRequestProperty("Content-Type", "application/json; charset=UTF-8")
@@ -55,6 +60,7 @@ object LiveBackendClient {
                     Pair("Error: $responseCode - $errorResponse", null)
                 }
             } catch (e: Exception) {
+                Log.e("LiveBackendClient", "Exception: ${e.message}", e)
                 e.printStackTrace()
                 Pair("Exception: ${e.message}", null)
             } finally {

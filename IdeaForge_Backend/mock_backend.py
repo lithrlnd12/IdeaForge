@@ -71,5 +71,5 @@ def generate_app():
 if __name__ == '__main__':
     # IMPORTANT: Listen on 0.0.0.0 to be accessible within the sandbox network
     # and potentially exposed externally if needed for testing with a real device.
-    app.run(host='0.0.0.0', port=5000, debug=True)
+    app.run(host='0.0.0.0', port=8080, debug=True)
 

@@ -8,28 +8,34 @@ import java.io.InputStreamReader
 import java.io.OutputStreamWriter
 import java.net.HttpURLConnection
 import java.net.URL
+import android.util.Log
+import com.example.ideaforge.BuildConfig
 
 // For a real app, consider using Retrofit or Ktor
 // This is a simplified client for the mock backend
 object MockBackendClient {
-    // Ensure this matches the address your Flask backend is running on.
-    // For testing with Android Emulator, "10.0.2.2" usually points to the host machine.
-    // If running backend on a different machine, use its IP address.
-    private const val BASE_URL = "http://10.0.2.2:5000/api/v1/"
+    // Default local development URL for Android Emulator
+    private const val LOCAL_BASE_URL = "http://10.0.2.2:8080/api/v1/"
+    
+    // Get BASE_URL from BuildConfig or use default
+    private val BASE_URL: String = BuildConfig.MOCK_BACKEND_URL.ifEmpty { LOCAL_BASE_URL }.apply {
+        Log.d("MockBackendClient", "Using mock backend URL: $this")
+    }
 
     suspend fun sendMessageToBackend(prompt: String, userId: String = "beta_user", clarificationDone: Boolean = false): Pair<String?, JSONObject?> {
         return withContext(Dispatchers.IO) {
             var connection: HttpURLConnection? = null
             try {
-                val url = URL("${BASE_URL}generate-app")
+                val url = URL("${BASE_URL}generate-app-real-build")
+                Log.d("MockBackendClient", "Making request to: $url")
                 connection = url.openConnection() as HttpURLConnection
                 connection.requestMethod = "POST"
                 connection.setRequestProperty("Content-Type", "application/json; charset=UTF-8")
                 connection.setRequestProperty("Accept", "application/json")
                 connection.doOutput = true
                 connection.doInput = true
-                connection.connectTimeout = 15000 // 15 seconds
-                connection.readTimeout = 15000    // 15 seconds
+                connection.connectTimeout = 60000 // 60 seconds, AI generation can take time
+                connection.readTimeout = 180000    // 180 seconds, AI generation can take time
 
                 val jsonParam = JSONObject()
                 jsonParam.put("prompt", prompt)

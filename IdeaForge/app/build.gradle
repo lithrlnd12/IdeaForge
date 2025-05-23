@@ -13,12 +13,21 @@ android {
         targetSdk 34
         versionCode 1
         versionName "1.0"
+        
+        // Default backend URLs
+        buildConfigField "String", "BACKEND_URL", "\"https://ideaforge-backend-921972313555.us-central1.run.app/api/v1/\""
+        buildConfigField "String", "MOCK_BACKEND_URL", "\"http://10.0.2.2:8080/api/v1/\""
     }
 
     buildTypes {
         release {
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+        }
+        debug {
+            // Override URLs for debug builds if needed
+            buildConfigField "String", "BACKEND_URL", "\"https://ideaforge-backend-921972313555.us-central1.run.app/api/v1/\""
+            buildConfigField "String", "MOCK_BACKEND_URL", "\"http://10.0.2.2:8080/api/v1/\""
         }
     }
     compileOptions {
@@ -30,6 +39,7 @@ android {
     }
     buildFeatures {
         compose true
+        buildConfig true
     }
     composeOptions {
         kotlinCompilerExtensionVersion '1.5.11'
