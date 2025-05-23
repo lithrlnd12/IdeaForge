@@ -12,9 +12,9 @@ import java.net.URL
 object LiveBackendClient {
     // Ensure this matches the address your Flask backend is running on.
     // For testing with Android Emulator, "10.0.2.2" usually points to the host machine.
-    // The live_backend.py is set to run on port 5001.
+    // The backend is set to run on port 8080.
     // For cloud deployment, use the Cloud Run URL:
-    private const val BASE_URL = "https://ideaforge-backend-fykg3qex2q-uc.a.run.app/api/v1/"
+    private const val BASE_URL = "https://ideaforge-backend-921972313555.us-central1.run.app/api/v1/"
 
     suspend fun generateAppWithLiveAI(prompt: String, userId: String = "live_user", systemPromptOverride: String? = null): Pair<String?, JSONObject?> {
         return withContext(Dispatchers.IO) {
